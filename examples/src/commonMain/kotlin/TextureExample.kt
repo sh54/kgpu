@@ -60,6 +60,7 @@ suspend fun runTextureExample(window: Window) {
 
     val adapter = Kgpu.requestAdapterAsync(window)
     val device = adapter.requestDeviceAsync()
+    val queue = device.getDefaultQueue()
 
     val vertexBuffer =
         BufferUtils.createFloatBuffer(device, "vertices", vertices, BufferUsage.VERTEX)
@@ -77,25 +78,21 @@ suspend fun runTextureExample(window: Window) {
         device.createShaderModule(
             KShader.compile("frag", TextureShaderSource.frag, KShaderType.FRAGMENT))
 
-    val textureDesc =
-        TextureDescriptor(
-            Extent3D(image.width.toLong(), image.height.toLong(), 1),
-            1,
-            1,
-            TextureDimension.D2,
-            TEXTURE_FORMAT,
-            TextureUsage.COPY_DST or TextureUsage.SAMPLED)
-    val texture = device.createTexture(textureDesc)
-    val textureBuffer =
-        BufferUtils.createBufferFromData(device, "texture temp", imageBytes, BufferUsage.COPY_SRC)
-
-    var cmdEncoder = device.createCommandEncoder()
-    cmdEncoder.copyBufferToTexture(
-        BufferCopyView(textureBuffer, image.width * 4, image.height),
-        TextureCopyView(texture),
+    val texture =
+        device.createTexture(
+            TextureDescriptor(
+                Extent3D(image.width.toLong(), image.height.toLong(), 1),
+                1,
+                1,
+                TextureDimension.D2,
+                TEXTURE_FORMAT,
+                TextureUsage.COPY_DST or TextureUsage.SAMPLED))
+    queue.writeTexture(
+        TextureCopyView(texture, 0, Origin3D.ZERO),
+        imageBytes,
+        TextureDataLayout(4 * image.width, image.height, 0L),
         Extent3D(image.width.toLong(), image.height.toLong(), 1))
-    device.getDefaultQueue().submit(cmdEncoder.finish())
-    textureBuffer.destroy()
+    queue.submit()
 
     val sampler = device.createSampler(SamplerDescriptor())
     val textureView = texture.createView()
@@ -126,11 +123,11 @@ suspend fun runTextureExample(window: Window) {
     val swapChainDescriptor = SwapChainDescriptor(device, TextureFormat.BGRA8_UNORM)
 
     var swapChain = window.configureSwapChain(swapChainDescriptor)
-    window.onResize = { size -> swapChain = window.configureSwapChain(swapChainDescriptor) }
+    window.onResize = { _ -> swapChain = window.configureSwapChain(swapChainDescriptor) }
 
     Kgpu.runLoop(window) {
         val swapChainTexture = swapChain.getCurrentTextureView()
-        cmdEncoder = device.createCommandEncoder()
+        val cmdEncoder = device.createCommandEncoder()
 
         val colorAttachment = RenderPassColorAttachmentDescriptor(swapChainTexture, Color.WHITE)
         val renderPassEncoder = cmdEncoder.beginRenderPass(RenderPassDescriptor(colorAttachment))
@@ -142,7 +139,6 @@ suspend fun runTextureExample(window: Window) {
         renderPassEncoder.endPass()
 
         val cmdBuffer = cmdEncoder.finish()
-        val queue = device.getDefaultQueue()
         queue.writeBuffer(matrixBuffer, createTransformationMatrix().toBytes())
         queue.submit(cmdBuffer)
         swapChain.present()

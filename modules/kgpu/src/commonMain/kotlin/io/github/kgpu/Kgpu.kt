@@ -151,6 +151,10 @@ expect class Queue {
         dataOffset: Long = 0,
         size: Long = data.size.toLong()
     )
+
+    fun writeTexture(
+        destination: TextureCopyView, data: ByteArray, dataLayout: TextureDataLayout, size: Extent3D
+    )
 }
 
 /**
@@ -183,7 +187,11 @@ expect class Sampler : IntoBindingResource
 
 expect class Extent3D(width: Long, height: Long, depth: Long)
 
-expect class Origin3D(x: Long, y: Long, z: Long)
+expect class Origin3D(x: Long, y: Long, z: Long) {
+    companion object {
+        val ZERO: Origin3D
+    }
+}
 
 /**
  * The usages determine what kind of memory the texture is allocated from and what actions the
@@ -430,9 +438,9 @@ expect class BlendDescriptor(
 expect class TextureCopyView(
     texture: Texture, mipLevel: Long = 0, origin: Origin3D = Origin3D(0, 0, 0))
 
-expect class BufferCopyView(
-    buffer: Buffer, bytesPerRow: Int, rowsPerImage: Int, offset: Long = 0
-) {}
+expect class TextureDataLayout(bytesPerRow: Int, rowsPerImage: Int, offset: Long = 0)
+
+expect class BufferCopyView(buffer: Buffer, bytesPerRow: Int, rowsPerImage: Int, offset: Long = 0)
 
 expect class SamplerDescriptor(
     compare: CompareFunction? = null,
@@ -650,6 +658,7 @@ expect enum class BlendFactor {
 expect enum class IndexFormat {
     /// Supported on Web and Desktop
     UINT16,
+
     /// Not supported on web for KGPU.
     UINT32,
 }

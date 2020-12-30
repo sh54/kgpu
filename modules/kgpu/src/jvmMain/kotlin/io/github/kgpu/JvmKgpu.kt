@@ -706,6 +706,20 @@ actual class Queue(val id: Long) {
 
         WgpuJava.wgpuNative.wgpu_queue_write_buffer(id, buffer.id, offset, ptr, size.toInt())
     }
+
+    actual fun writeTexture(
+        destination: TextureCopyView, data: ByteArray, dataLayout: TextureDataLayout, size: Extent3D
+    ) {
+        val ptr = WgpuJava.createByteArrayPointer(data)
+
+        WgpuJava.wgpuNative.wgpu_queue_write_texture(
+            id,
+            destination.pointerTo,
+            ptr,
+            data.size.toLong(),
+            dataLayout.pointerTo,
+            size.pointerTo)
+    }
 }
 
 actual class BufferDescriptor
@@ -817,6 +831,10 @@ actual interface IntoBindingResource {
 
 actual class Origin3D actual constructor(x: Long, y: Long, z: Long) : WgpuOrigin3d(true) {
 
+    actual companion object {
+        actual val ZERO: Origin3D = Origin3D(0, 0, 0)
+    }
+
     init {
         this.x = x
         this.y = y
@@ -896,5 +914,15 @@ actual class ComputePipelineDescriptor
         this.layout = layout.id
         this.computeStage.module = computeStage.module
         this.computeStage.entryPoint = computeStage.entryPoint
+    }
+}
+
+actual class TextureDataLayout
+    actual constructor(bytesPerRow: Int, rowsPerImage: Int, offset: Long) :
+    WgpuTextureDataLayout(true) {
+    init {
+        this.bytesPerRow = bytesPerRow.toLong()
+        this.rowsPerImage = rowsPerImage.toLong()
+        this.offset = offset
     }
 }

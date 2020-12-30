@@ -90,6 +90,7 @@ suspend fun runEarthExample(window: Window) {
     val vertices = earth.generateVertices()
     val adapter = Kgpu.requestAdapterAsync(window)
     val device = adapter.requestDeviceAsync()
+    val queue = device.getDefaultQueue()
     val (image, imageBytes) = loadImage("earth3D.png")
     val modelMatrix = Matrix4().rotate(0f, .1f, 0f)
     val viewMatrix = Matrix4().lookAt(Vec3(-5f, -5f, 3.5f), Vec3(), Vec3.UNIT_Z)
@@ -118,16 +119,11 @@ suspend fun runEarthExample(window: Window) {
             TextureFormat.RGBA8_UNORM_SRGB,
             TextureUsage.COPY_DST or TextureUsage.SAMPLED)
     val texture = device.createTexture(textureDesc)
-    val textureBuffer =
-        BufferUtils.createBufferFromData(device, "texture temp", imageBytes, BufferUsage.COPY_SRC)
-
-    var cmdEncoder = device.createCommandEncoder()
-    cmdEncoder.copyBufferToTexture(
-        BufferCopyView(textureBuffer, image.width * 4, image.height),
-        TextureCopyView(texture),
+    queue.writeTexture(
+        TextureCopyView(texture, 0, Origin3D.ZERO),
+        imageBytes,
+        TextureDataLayout(image.width * 4, image.height, 0L),
         Extent3D(image.width.toLong(), image.height.toLong(), 1))
-    device.getDefaultQueue().submit(cmdEncoder.finish())
-    textureBuffer.destroy()
 
     val sampler = device.createSampler(SamplerDescriptor())
     val textureView = texture.createView()
@@ -169,7 +165,7 @@ suspend fun runEarthExample(window: Window) {
         }
 
         val swapChainTexture = swapChain.getCurrentTextureView()
-        cmdEncoder = device.createCommandEncoder()
+        val cmdEncoder = device.createCommandEncoder()
 
         val colorAttachment = RenderPassColorAttachmentDescriptor(swapChainTexture, Color.BLACK)
         val renderPassEncoder = cmdEncoder.beginRenderPass(RenderPassDescriptor(colorAttachment))
@@ -181,7 +177,6 @@ suspend fun runEarthExample(window: Window) {
         renderPassEncoder.endPass()
 
         val cmdBuffer = cmdEncoder.finish()
-        val queue = device.getDefaultQueue()
         modelMatrix.rotate(0f, 0f, .01f)
         queue.writeBuffer(modelMatrixBuffer, modelMatrix.toBytes())
         queue.writeBuffer(

@@ -596,6 +596,15 @@ actual class Queue(val jsType: GPUQueue) {
 
         jsType.writeBuffer(buffer.jsType, offset, arrayBuffer, dataOffset, size)
     }
+
+    actual fun writeTexture(
+        destination: TextureCopyView, data: ByteArray, dataLayout: TextureDataLayout, size: Extent3D
+    ) {
+        val buffer = ArrayBuffer(data.size)
+        Uint8Array(buffer).set(data.toTypedArray())
+
+        jsType.writeTexture(destination, buffer, dataLayout, size)
+    }
 }
 
 external class GPUQueue {
@@ -604,6 +613,13 @@ external class GPUQueue {
 
     fun writeBuffer(
         buffer: GPUBuffer, offset: Long, data: ArrayBuffer, dataOffset: Long, size: Long
+    )
+
+    fun writeTexture(
+        destination: TextureCopyView,
+        data: ArrayBuffer,
+        dataLayout: TextureDataLayout,
+        size: Extent3D
     )
 }
 
@@ -693,7 +709,11 @@ actual interface IntoBindingResource {
     fun intoBindingResource(): dynamic
 }
 
-actual class Origin3D actual constructor(val x: Long, val y: Long, val z: Long)
+actual class Origin3D actual constructor(val x: Long, val y: Long, val z: Long) {
+    actual companion object {
+        actual val ZERO = Origin3D(0, 0, 0)
+    }
+}
 
 actual class TextureCopyView
     actual constructor(texture: Texture, val mipLevel: Long, val origin: Origin3D) {
@@ -743,6 +763,9 @@ external class GPUSampler
 
 actual class ComputePipelineDescriptor
     actual constructor(val layout: PipelineLayout, val computeStage: ProgrammableStageDescriptor)
+
+actual class TextureDataLayout
+    actual constructor(val bytesPerRow: Int, val rowsPerImage: Int, val offset: Long)
 
 actual enum class TextureFormat(val jsType: String) {
     R8_UNORM("r8unorm"),

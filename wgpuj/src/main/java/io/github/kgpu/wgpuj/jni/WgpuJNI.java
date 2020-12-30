@@ -196,4 +196,12 @@ public interface WgpuJNI {
 
     void wgpu_command_encoder_copy_texture_to_buffer(
             @u_int64_t long encoder, Pointer source, Pointer destination, Pointer size);
+
+    void wgpu_queue_write_texture(
+            @u_int64_t long id,
+            Pointer textureCopyView,
+            Pointer data,
+            @u_int64_t long length,
+            Pointer dataLayout,
+            Pointer size);
 }

@@ -37,6 +37,7 @@ fun main() {
             }
             "7" -> runWindowEventExample(kgpuWindow)
             "8" -> runBoidExample(kgpuWindow)
+            "9" -> runSkyboxExample(kgpuWindow)
             else -> runTriangleExample(kgpuWindow)
         }
     }

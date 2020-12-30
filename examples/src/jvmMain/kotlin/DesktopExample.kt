@@ -24,6 +24,7 @@ fun main(args: Array<String>) {
             "-msaa" -> runMsaaTriangle(createWindow())
             "-window" -> runWindowEventExample(createWindow())
             "-boid" -> runBoidExample(createWindow())
+            "-skybox" -> runSkyboxExample(createWindow())
             "-compute" -> {
                 Kgpu.init(false)
                 runComputeExample()
